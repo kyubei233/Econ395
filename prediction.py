@@ -5,4 +5,6 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 # Load and prepare data
-data = pd.read_csv("class_attendance_data.csv")
+data = pd.read_csv("alcohol.csv")
+X=data['educ','goodhealth','beertaxsq']
+Y=data['abuse']
