@@ -1,0 +1,95 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.utils import resample
+import graphviz
+
+# Dataset
+df = pd.read_excel("alcohol.xlsx")
+df.drop(columns=["Unnamed: 0"], inplace=True)
+
+# Define x and y
+y = df["abuse"]
+X = df[[
+    "age",         # Younger individuals more likely to abuse alcohol
+    "educ",        # Education level
+    "famsize",     # Living alone vs family
+    "ethanol",     # State alcohol consumption
+    "beertax",     # State beer tax
+    "cigtax",      # Cigarette tax
+    "fathalc",     # Father's alcohol history
+    "goodhealth"   # Self-rated health
+]]
+
+# Split Into Train and Test Sets (Stratified)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42)
+
+# Upsample Minority Class (Abuse = 1) in Training Data (only 10% of abuse case in dataset)
+train_data = pd.concat([X_train, y_train], axis=1)
+majority = train_data[train_data.abuse == 0]
+minority = train_data[train_data.abuse == 1]
+minority_upsampled = resample(minority, replace=True, n_samples=len(majority), random_state=42)
+train_upsampled = pd.concat([majority, minority_upsampled])
+X_train_bal = train_upsampled.drop(columns="abuse")
+y_train_bal = train_upsampled["abuse"]
+
+# Define Models
+models = {
+    "Logistic Regression": LogisticRegression(max_iter=1000, class_weight='balanced'),
+    "Decision Tree": DecisionTreeClassifier(random_state=42, class_weight='balanced'),
+    "Random Forest": RandomForestClassifier(random_state=42, class_weight='balanced')
+}
+
+# Train, Predict, and Evaluate Each Model 
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+results = []
+
+for name, model in models.items():
+    model.fit(X_train_bal, y_train_bal)
+    preds = model.predict(X_test)
+    probas = model.predict_proba(X_test)[:, 1]
+
+    cv_acc = cross_val_score(model, X_train_bal, y_train_bal, cv=kf, scoring='accuracy').mean()
+    acc = accuracy_score(y_test, preds)
+    prec = precision_score(y_test, preds)
+    rec = recall_score(y_test, preds)
+    f1 = f1_score(y_test, preds)
+    auc = roc_auc_score(y_test, probas)
+
+    print(f"\n{name}")
+    print(f"CV Accuracy:    {cv_acc:.3f}")
+    print(f"Test Accuracy:  {acc:.3f}")
+    print(f"Precision:      {prec:.3f}")
+    print(f"Recall:         {rec:.3f}")
+    print(f"F1 Score:       {f1:.3f}")
+    print(f"AUC:            {auc:.3f}")
+
+# Feature Importance Plot (Random Forest Only)
+rf = models["Random Forest"]
+importances = rf.feature_importances_
+features = X.columns
+sorted_idx = np.argsort(importances)
+
+plt.figure(figsize=(10, 6))
+plt.barh(features[sorted_idx], importances[sorted_idx])
+plt.title("Feature Importances (Random Forest)")
+plt.xlabel("Importance")
+plt.tight_layout()
+plt.show()
+
+# Visualize the Decision Tree
+tree = models["Decision Tree"]
+dot_data = export_graphviz(
+    tree, out_file=None,
+    feature_names=X.columns,
+    class_names=["No Abuse", "Abuse"],
+    filled=True, rounded=True, special_characters=True
+)
+graph = graphviz.Source(dot_data)
+graph.render("alcohol_abuse_decision_tree")  # Saves as PDF
