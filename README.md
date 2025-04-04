@@ -30,10 +30,10 @@
 
   Other Notable stuff:
 
-    beertax ≤ 0.994: Lower taxes linked to abuse.
+        beertax ≤ 0.994: Lower taxes linked to abuse.
   
-    fathalc ≤ 0.5: Absence of family history of alcoholism slightly reduces risk.
+        fathalc ≤ 0.5: Absence of family history of alcoholism slightly reduces risk.
   
-    goodhealth ≤ 0.5: Poor self-reported health is a risk signal.
+        goodhealth ≤ 0.5: Poor self-reported health is a risk signal.
   
-    age thresholds (e.g., ≤ 26.5, ≤ 36.5, ≤ 43.5) are used repeatedly to isolate younger high-risk groups.
+        age thresholds (e.g., ≤ 26.5, ≤ 36.5, ≤ 43.5) are used repeatedly to isolate younger high-risk groups.
